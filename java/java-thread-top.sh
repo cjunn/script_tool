@@ -8,6 +8,25 @@
 
 pid='';
 count=5;
+
+function usage(){
+	readonly PROG="`basename $0`"
+	cat <<EOF
+Usage: ${PROG} [OPTION]
+Find out the highest cpu consumed threads of java processes,
+and print the stack of these threads.
+Example:
+  ${PROG} -p <pid> -c 5      # show top 5 busy java threads info
+Output control:
+  -p, --pid <java pid>      find out the highest cpu consumed threads from
+                            the specified java process.
+                            default from all java process.
+  -c, --count <num>         set the thread count to show, default is 5.
+Miscellaneous:
+  -h, --help                display this help and exit.
+EOF
+}
+
 #1.Collect script parameters
 #2.Check whether PID exists
 if [ $# -gt 0 ];
@@ -24,12 +43,14 @@ then
 			;;
 		-h|--help)
 			usage
+			exit 0;
 			;;
 		--)
 			shift
 			break
 			;;
 		*)
+			shift
 			if [ -z "$1" ] ; then
 				break
 			fi
@@ -41,23 +62,6 @@ if  [ ! -n "$pid" ] ;then
 	echo "error: -p is empty"
 	exit 1;
 fi
-
-function usage(){
-	echo <<EOF
-Usage: ${PROG} [OPTION]
-Find out the highest cpu consumed threads of java processes,
-and print the stack of these threads.
-Example:
-  ${PROG} -p <pid> -c 5      # show top 5 busy java threads info
-Output control:
-  -p, --pid <java pid>      find out the highest cpu consumed threads from
-                            the specified java process.
-                            default from all java process.
-  -c, --count <num>         set the thread count to show, default is 5.
-Miscellaneous:
-  -h, --help                display this help and exit.
-EOF
-}
 
 function worker(){
 	#1.Query all threads according to PID.
@@ -75,7 +79,6 @@ function worker(){
 			tid_hex=$(printf "%x" $tid);
 			echo "====================== tid:${tid}  tid_hex:${tid_hex}  cpu:${cpu}  time:${time} ======================";
 			jstack $pid | awk 'BEGIN {RS = "\n\n+";ORS = "\n\n"} /'${tid_hex}'/ {print $0}'
-			echo "";
 			echo "";
 			whilec=$[$whilec+1];
 	done
